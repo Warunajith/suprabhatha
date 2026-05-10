@@ -367,21 +367,36 @@ input:focus { border-color: var(--gold); background: white; }
 
 <!-- ══════════════════════════════════════════════════════════ -->
 <!-- CONFIG (hidden — first time setup)                        -->
-<!-- ══════════════════════════════════════════════════════════ -->
-<div id="config-modal" style="display:none;">
-  <div style="position:fixed;inset:0;background:rgba(26,18,11,0.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:1.5rem;" id="config-modal-inner">
-    <div style="background:var(--cream);border-radius:var(--radius);padding:1.5rem;width:100%;max-width:440px;position:relative;z-index:201;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
-        <h2 style="font-family:'Cinzel',serif;color:var(--bark);font-size:1.05rem;">⚙️ Connect to Google Sheets</h2>
-        <button onclick="closeConfig()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted);line-height:1;">×</button>
-      </div>
-      <p style="font-size:0.83rem;color:var(--muted);margin-bottom:1rem;">Paste your Google Apps Script URL to connect to your spreadsheet. You only need to do this once.</p>
-      <div class="form-group">
-        <label>Google Apps Script URL</label>
-        <input type="url" id="api-url-input" placeholder="https://script.google.com/macros/s/…/exec" />
-      </div>
-      <button class="btn btn-primary" onclick="saveConfig()">💾 Save & Connect</button>
+<!-- CONFIG MODAL — single flat fixed overlay, no nesting -->
+<div id="config-modal" style="
+  display:none;
+  position:fixed;
+  top:0; left:0; right:0; bottom:0;
+  background:rgba(26,18,11,0.82);
+  z-index:9999;
+  padding:1.5rem;
+  box-sizing:border-box;
+  overflow-y:auto;
+">
+  <div style="
+    background:#FDF6EC;
+    border-radius:14px;
+    padding:1.5rem;
+    width:100%;
+    max-width:420px;
+    margin:4rem auto 0;
+  ">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+      <h2 style="font-family:'Cinzel',serif;color:#3D2B1F;font-size:1.05rem;margin:0;">⚙️ Connect to Google Sheets</h2>
+      <button onclick="closeConfig()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#8C7B6B;line-height:1;padding:0;">×</button>
     </div>
+    <p style="font-size:0.83rem;color:#8C7B6B;margin-bottom:1rem;line-height:1.5;">Paste your Google Apps Script URL below. You only need to do this once per device.</p>
+    <label style="display:block;font-size:0.75rem;font-weight:700;color:#8C7B6B;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;">Google Apps Script URL</label>
+    <input type="url" id="api-url-input"
+      placeholder="https://script.google.com/macros/s/…/exec"
+      style="width:100%;padding:0.7rem 0.9rem;border:1.5px solid #DDD0B8;border-radius:8px;font-size:0.9rem;background:#F5EDD8;color:#1A120B;box-sizing:border-box;margin-bottom:1rem;font-family:inherit;"
+    />
+    <button onclick="saveConfig()" style="width:100%;padding:0.85rem;background:#3D2B1F;color:#C9A84C;border:none;border-radius:10px;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;">💾 Save & Connect</button>
   </div>
 </div>
 
@@ -395,9 +410,10 @@ function checkConfig() {
   if (!API_URL) showConfigModal();
 }
 function showConfigModal() {
-  const m = document.getElementById('config-modal');
+  var m = document.getElementById('config-modal');
   m.style.display = 'block';
-  document.getElementById('api-url-input').value = API_URL;
+  var inp = document.getElementById('api-url-input');
+  if (inp) inp.value = API_URL || '';
 }
 function closeConfig() {
   document.getElementById('config-modal').style.display = 'none';
