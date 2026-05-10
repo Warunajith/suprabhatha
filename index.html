@@ -501,7 +501,7 @@ function resetReg() {
 // ══════════════════════════════════════════════════════════════
 let scanner = null;
 let scannerRunning = false;
-let scanCooldown = false;
+const scannedToday = {}; // memberId -> true, resets when page reloads
 
 function startScanner() {
   if (scannerRunning) return;
@@ -514,10 +514,13 @@ function startScanner() {
     { facingMode: "environment" },
     { fps: 12, qrbox: { width: 240, height: 240 }, aspectRatio: 1.0 },
     (qrData) => {
-      if (scanCooldown) return;
-      scanCooldown = true;
-      processAttendance(qrData.trim().toUpperCase());
-      setTimeout(() => { scanCooldown = false; }, 3000);
+      const id = qrData.trim().toUpperCase();
+      if (scannedToday[id]) {
+        // Already confirmed today on this device — show cached result silently
+        showScanResult({ success: true, alreadyToday: true, member: scannedToday[id], programmeMonth: scannedToday[id].month });
+        return;
+      }
+      processAttendance(id);
     },
     () => {}
   ).then(() => {
@@ -557,21 +560,30 @@ function showScanResult(res) {
   const box = document.getElementById('scan-result');
   box.style.display = 'block';
   let cls, icon, name, sub;
-  if (res.success) {
+
+  if (res.success && !res.alreadyToday) {
+    // Fresh attendance marked
     cls = 'success'; icon = '🙏';
     name = res.member.name; sub = res.programmeMonth + ' — Marked ✓';
+    // Cache so repeat scans today are instant
+    scannedToday[res.member.id] = { ...res.member, month: res.programmeMonth };
+  } else if (res.success && res.alreadyToday) {
+    // Re-scanned same day — already recorded, just confirm
+    cls = 'success'; icon = '✅';
+    name = res.member.name; sub = 'Already here today — welcome! 🙏';
   } else if (res.alreadyMarked) {
     cls = 'warning'; icon = '⚠️';
-    name = res.member.name; sub = 'Already marked this month';
+    name = res.member.name; sub = 'Already marked for ' + res.member.name.split(' ')[0] + ' this month';
   } else {
     cls = 'error'; icon = '❌';
     name = 'Not Found'; sub = res.message;
   }
-  box.innerHTML = `<div class="scan-result ${cls}">
-    <div class="ri">${icon}</div>
-    <div class="rn">${name}</div>
-    <div class="rm">${sub}</div>
-  </div>`;
+
+  box.innerHTML = \`<div class="scan-result \${cls}">
+    <div class="ri">\${icon}</div>
+    <div class="rn">\${name}</div>
+    <div class="rm">\${sub}</div>
+  </div>\`;
   box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
