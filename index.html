@@ -75,12 +75,22 @@ input:focus{border-color:var(--gold);background:white;}
 .btn-loading{opacity:0.7;cursor:not-allowed;pointer-events:none;}
 .btn-loading::after{content:" ...";letter-spacing:2px;}
 @media print{
+  @page{size:A5 portrait;margin:1.5cm;}
   body *{visibility:hidden;}
   #print-area,#print-area *{visibility:visible;}
-  #print-area{position:fixed;top:0;left:0;width:100%;text-align:center;padding:2rem;}
-  #print-area .print-name{font-family:"Cinzel",serif;font-size:1.4rem;color:#3D2B1F;margin-bottom:0.5rem;}
-  #print-area .print-sub{font-size:0.85rem;color:#8C7B6B;margin-bottom:1rem;}
-  #print-area .print-id{font-size:1rem;font-weight:700;letter-spacing:0.1em;color:#3D2B1F;margin-top:0.75rem;}
+  #print-area{
+    position:fixed;top:0;left:0;
+    width:100%;height:100%;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    text-align:center;
+    page-break-after:avoid;
+    page-break-inside:avoid;
+  }
+  #print-area .print-name{font-family:"Cinzel",serif;font-size:1.5rem;color:#3D2B1F;margin-bottom:0.3rem;font-weight:600;}
+  #print-area .print-sub{font-size:0.8rem;color:#8C7B6B;margin-bottom:1rem;letter-spacing:0.05em;}
+  #print-area #print-qr img{width:180px;height:180px;}
+  #print-area .print-id{font-size:1rem;font-weight:700;letter-spacing:0.12em;color:#3D2B1F;margin-top:0.75rem;font-family:monospace;}
 }
 .empty{text-align:center;padding:2.5rem 1rem;color:var(--muted);}
 .empty .ei{font-size:2.5rem;margin-bottom:0.5rem;}
@@ -96,7 +106,7 @@ input:focus{border-color:var(--gold);background:white;}
 </head>
 <body>
 
-<div id="print-area" style="display:none;">
+<div id="print-area" style="display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:fixed;top:0;left:0;width:100%;height:100%;background:#FDF6EC;z-index:99999;">
   <div class="print-name" id="print-name"></div>
   <div class="print-sub">Suprabhatha Dhamma Programme</div>
   <div id="print-qr"></div>
@@ -152,6 +162,7 @@ input:focus{border-color:var(--gold);background:white;}
     </div>
     <button class="btn btn-secondary" onclick="resetReg()" style="margin-top:0.8rem;">Register Another</button>
     <button class="btn btn-secondary" onclick="printQR()">&#x1F5A8;&#xFE0F; Print QR</button>
+    <button class="btn btn-secondary" onclick="downloadQR()">&#x2B07;&#xFE0F; Download as PNG</button>
   </div>
 </div>
 
@@ -276,25 +287,81 @@ function showQR(member) {
   });
 }
 
-function printQR() {
+function getQRCanvas() {
+  return document.querySelector('#qrcode canvas');
+}
+
+function buildPrintArea() {
   var name = document.getElementById('qr-name').textContent;
   var id = document.getElementById('qr-id').textContent;
   document.getElementById('print-name').textContent = name;
   document.getElementById('print-id').textContent = id;
-  // Copy QR canvas image into print area
-  var srcCanvas = document.querySelector('#qrcode canvas');
+  var srcCanvas = getQRCanvas();
   var printQrDiv = document.getElementById('print-qr');
   printQrDiv.innerHTML = '';
   if (srcCanvas) {
     var img = new Image();
     img.src = srcCanvas.toDataURL();
-    img.style.width = '200px';
-    img.style.height = '200px';
+    img.style.width = '180px';
+    img.style.height = '180px';
     printQrDiv.appendChild(img);
   }
-  document.getElementById('print-area').style.display = 'block';
-  window.print();
-  document.getElementById('print-area').style.display = 'none';
+}
+
+function printQR() {
+  buildPrintArea();
+  document.getElementById('print-area').style.display = 'flex';
+  setTimeout(function() {
+    window.print();
+    document.getElementById('print-area').style.display = 'none';
+  }, 150);
+}
+
+function downloadQR() {
+  var name = document.getElementById('qr-name').textContent;
+  var id = document.getElementById('qr-id').textContent;
+  var srcCanvas = getQRCanvas();
+  if (!srcCanvas) { toast('QR not ready', 'error'); return; }
+
+  // Build a canvas with name + QR + ID
+  var pad = 24;
+  var qrSize = 200;
+  var cw = qrSize + pad * 2;
+  var ch = 320;
+  var cv = document.createElement('canvas');
+  cv.width = cw; cv.height = ch;
+  var ctx = cv.getContext('2d');
+
+  // Background
+  ctx.fillStyle = '#FDF6EC';
+  ctx.fillRect(0, 0, cw, ch);
+
+  // Name
+  ctx.fillStyle = '#3D2B1F';
+  ctx.font = 'bold 18px serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(name, cw / 2, 36);
+
+  // Subtitle
+  ctx.fillStyle = '#8C7B6B';
+  ctx.font = '12px sans-serif';
+  ctx.fillText('Suprabhatha Dhamma Programme', cw / 2, 56);
+
+  // QR image
+  ctx.drawImage(srcCanvas, pad, 68, qrSize, qrSize);
+
+  // ID
+  ctx.fillStyle = '#3D2B1F';
+  ctx.font = 'bold 15px monospace';
+  ctx.letterSpacing = '4px';
+  ctx.fillText(id, cw / 2, 68 + qrSize + 32);
+
+  // Download
+  var link = document.createElement('a');
+  link.download = 'QR-' + id + '-' + name.replace(/\s+/g, '_') + '.png';
+  link.href = cv.toDataURL('image/png');
+  link.click();
+  toast('QR downloaded!', 'success');
 }
 
 function resetReg() {
