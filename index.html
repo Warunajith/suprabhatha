@@ -191,9 +191,10 @@ function saveCfg() {
   localStorage.setItem('suprabhatha_api', url);
   hideCfg();
   toast('Connected! You can now use all tabs.', 'success');
+  loadTodayScans();
 }
 
-if (!API_URL) { showCfg(); }
+if (!API_URL) { showCfg(); } else { loadTodayScans(); }
 
 function toast(msg, type) {
   var el = document.getElementById('toast');
@@ -210,6 +211,7 @@ function showPage(name) {
   document.getElementById('page-' + name).classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
   if (name !== 'scan') stopScanner();
+  if (name === 'scan') loadTodayScans();
   if (name === 'members') loadMembers();
   if (name === 'dashboard') loadDashboard();
 }
@@ -263,6 +265,23 @@ var scanner = null;
 var scannerRunning = false;
 var scannedToday = {};
 var processing = false; // lock to block duplicate scans during API call
+
+function loadTodayScans() {
+  if (!API_URL) return;
+  apiCall({ action: 'getTodayScans' }, function(res) {
+    if (res.success && res.scanned) {
+      // Pre-fill cache with anyone already scanned today
+      for (var id in res.scanned) {
+        var m = res.scanned[id];
+        scannedToday[id] = { id: m.id, name: m.name, month: m.programmeMonth };
+      }
+      var count = Object.keys(res.scanned).length;
+      if (count > 0) {
+        toast(count + ' member(s) already scanned today - loaded', 'info');
+      }
+    }
+  });
+}
 
 function startScanner() {
   if (scannerRunning) return;
