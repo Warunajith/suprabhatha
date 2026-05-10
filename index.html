@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Suprabhatha · Dhamma Programme</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root {
+  --gold: #C9A84C;
+  --gold-light: #F0D080;
+  --saffron: #E07B39;
+  --deep: #1A120B;
+  --bark: #3D2B1F;
+  --cream: #FDF6EC;
+  --petal: #F5EDD8;
+  --muted: #8C7B6B;
+  --green: #2D6A4F;
+  --red: #B23A2A;
+  --radius: 14px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.12);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--cream);
+  color: var(--deep);
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.header {
+  background: var(--bark);
+  padding: 1rem 1.2rem;
+  display: flex; align-items: center; gap: 12px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.3);
+}
+.header-text h1 {
+  font-family: 'Cinzel', serif; font-size: 1.25rem;
+  color: var(--gold); letter-spacing: 0.08em;
+}
+.header-text p { font-size: 0.72rem; color: var(--gold-light); opacity: 0.8; }
+
+/* ── NAV ── */
+.nav {
+  background: var(--petal);
+  border-bottom: 1.5px solid #DDD0B8;
+  display: flex;
+}
+.nav-btn {
+  flex: 1; padding: 0.75rem 0.3rem;
+  border: none; background: transparent; cursor: pointer;
+  font-family: 'Nunito', sans-serif; font-size: 0.72rem; font-weight: 600;
+  color: var(--muted);
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  border-bottom: 3px solid transparent; transition: all 0.2s;
+}
+.nav-btn .ni { font-size: 1.25rem; }
+.nav-btn.active { color: var(--saffron); border-bottom-color: var(--saffron); background: white; }
+.nav-btn:hover:not(.active) { background: #EEE4D4; }
+
+/* ── PAGES ── */
+.page { display: none; padding: 1.2rem; max-width: 680px; margin: 0 auto; }
+.page.active { display: block; }
+
+/* ── CARDS ── */
+.card {
+  background: white; border-radius: var(--radius);
+  padding: 1.3rem; box-shadow: var(--shadow);
+  margin-bottom: 1rem; border: 1px solid #EDE0C8;
+}
+.card-title {
+  font-family: 'Cinzel', serif; font-size: 0.95rem; color: var(--bark);
+  margin-bottom: 1rem; padding-bottom: 0.65rem;
+  border-bottom: 1px solid #EDE0C8;
+}
+
+/* ── FORM ── */
+.form-group { margin-bottom: 0.85rem; }
+label {
+  display: block; font-size: 0.75rem; font-weight: 700;
+  color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;
+}
+input, select {
+  width: 100%; padding: 0.7rem 0.9rem;
+  border: 1.5px solid #DDD0B8; border-radius: 8px;
+  font-family: 'Nunito', sans-serif; font-size: 0.9rem;
+  background: var(--petal); color: var(--deep);
+  transition: border-color 0.2s; outline: none;
+}
+input:focus { border-color: var(--gold); background: white; }
+
+/* ── BUTTONS ── */
+.btn {
+  width: 100%; padding: 0.85rem; border: none; border-radius: 10px;
+  font-family: 'Nunito', sans-serif; font-size: 0.95rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; letter-spacing: 0.02em;
+}
+.btn-primary { background: var(--bark); color: var(--gold); }
+.btn-primary:hover { background: var(--deep); }
+.btn-secondary { background: var(--petal); color: var(--bark); border: 1.5px solid #DDD0B8; margin-top: 0.5rem; }
+.btn-scan { background: var(--saffron); color: white; }
+.btn-scan:hover { background: #c06628; }
+.btn-stop { background: #8C7B6B; color: white; margin-top: 0.5rem; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 1.5rem; left: 50%;
+  transform: translateX(-50%) translateY(120px);
+  padding: 0.8rem 1.4rem; border-radius: 50px;
+  font-size: 0.88rem; font-weight: 600; z-index: 999;
+  transition: transform 0.35s cubic-bezier(.34,1.56,.64,1);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  max-width: 88vw; text-align: center; pointer-events: none;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+#toast.success { background: var(--green); color: white; }
+#toast.error   { background: var(--red); color: white; }
+#toast.warning { background: var(--saffron); color: white; }
+#toast.info    { background: var(--bark); color: var(--gold-light); }
+
+/* ── QR DISPLAY ── */
+.qr-box {
+  text-align: center; padding: 1.2rem;
+  background: var(--petal); border-radius: var(--radius);
+  border: 1.5px dashed #DDD0B8;
+}
+.qr-box h3 { font-family: 'Cinzel', serif; font-size: 1.05rem; color: var(--bark); }
+.qr-box p { font-size: 0.8rem; color: var(--muted); margin: 0.3rem 0 0.8rem; }
+#qrcode { display: inline-block; padding: 10px; background: white; border-radius: 10px; margin: 0.5rem 0; }
+.member-id-badge {
+  display: inline-block; background: var(--bark); color: var(--gold);
+  padding: 0.28rem 0.9rem; border-radius: 50px;
+  font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; margin-top: 0.5rem;
+}
+
+/* ── SCANNER ── */
+#reader {
+  border-radius: 12px; overflow: hidden;
+  background: #000; margin-bottom: 0.8rem;
+  min-height: 260px;
+}
+#reader video { width: 100% !important; }
+#reader img { display: none !important; }
+
+.scan-result {
+  text-align: center; padding: 1.2rem;
+  border-radius: var(--radius); margin-bottom: 0.8rem;
+}
+.scan-result.success { background: #E8F5EE; border: 1.5px solid #A3D4B5; }
+.scan-result.error   { background: #FDF0EE; border: 1.5px solid #F0B8B0; }
+.scan-result.warning { background: #FEF6EC; border: 1.5px solid #F0D4A0; }
+.scan-result .ri { font-size: 2.5rem; margin-bottom: 0.3rem; }
+.scan-result .rn { font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--bark); }
+.scan-result .rm { font-size: 0.82rem; color: var(--muted); margin-top: 0.2rem; }
+
+/* ── CONFIG BANNER ── */
+.config-banner {
+  background: #FEF3CD; border: 1.5px solid #F0CC60;
+  border-radius: var(--radius); padding: 1rem 1.2rem; margin-bottom: 1rem;
+}
+.config-banner p { font-size: 0.85rem; color: #7A5800; font-weight: 600; margin-bottom: 0.5rem; }
+.config-banner input { background: white; border-color: #F0CC60; }
+.config-banner .btn-save { background: #7A5800; color: white; margin-top: 0.5rem; }
+
+/* ── MEMBERS ── */
+.search-wrap { position: relative; margin-bottom: 0.8rem; }
+.search-wrap input { padding-left: 2.2rem; }
+.search-icon { position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.9rem; pointer-events: none; }
+
+.member-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0.75rem; border-radius: 10px;
+  border: 1px solid #EDE0C8; margin-bottom: 0.5rem;
+  background: white; cursor: pointer; transition: all 0.15s;
+}
+.member-item:hover { border-color: var(--gold); background: var(--petal); }
+.avatar {
+  width: 42px; height: 42px; border-radius: 50%;
+  background: var(--bark); color: var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cinzel', serif; font-weight: 600; font-size: 0.95rem; flex-shrink: 0;
+}
+.member-info { flex: 1; min-width: 0; }
+.member-info strong { display: block; font-size: 0.9rem; color: var(--deep); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-info span { font-size: 0.78rem; color: var(--muted); }
+.att-badge {
+  background: var(--petal); color: var(--bark);
+  font-size: 0.75rem; font-weight: 700;
+  padding: 3px 9px; border-radius: 50px;
+  border: 1px solid #DDD0B8; white-space: nowrap;
+}
+
+/* ── STATS ── */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; margin-bottom: 1rem; }
+.stat-card {
+  background: white; border-radius: var(--radius);
+  padding: 1.1rem; text-align: center;
+  border: 1px solid #EDE0C8; box-shadow: var(--shadow);
+}
+.stat-number { font-family: 'Cinzel', serif; font-size: 1.9rem; color: var(--bark); font-weight: 600; }
+.stat-label { font-size: 0.72rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 3px; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(26,18,11,0.55);
+  z-index: 150; display: flex; align-items: flex-end;
+}
+.modal {
+  background: var(--cream); border-radius: var(--radius) var(--radius) 0 0;
+  padding: 1.3rem; width: 100%; max-height: 82vh; overflow-y: auto;
+  animation: slideUp 0.28s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes slideUp { from { transform: translateY(100%); } }
+.modal-handle { width: 36px; height: 4px; background: #DDD0B8; border-radius: 2px; margin: 0 auto 1rem; }
+.info-row { display: flex; gap: 8px; padding: 0.5rem 0; border-bottom: 1px solid #EDE0C8; font-size: 0.88rem; }
+.info-row strong { color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.04em; min-width: 80px; padding-top: 2px; }
+.att-chip {
+  display: inline-block; background: var(--petal); color: var(--bark);
+  padding: 3px 10px; border-radius: 50px;
+  font-size: 0.78rem; font-weight: 600; margin: 3px;
+  border: 1px solid #DDD0B8;
+}
+
+/* ── MISC ── */
+.spinner {
+  width: 32px; height: 32px;
+  border: 3px solid #EDE0C8; border-top-color: var(--gold);
+  border-radius: 50%; animation: spin 0.8s linear infinite; margin: 1rem auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty { text-align: center; padding: 2.5rem 1rem; color: var(--muted); }
+.empty .ei { font-size: 2.5rem; margin-bottom: 0.5rem; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div style="font-size:1.8rem;">☸️</div>
+  <div class="header-text">
+    <h1>Suprabhatha</h1>
+    <p>Dhamma Programme · Young Generation</p>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="showPage('register')" id="nav-register">
+    <span class="ni">📝</span>Register
+  </button>
+  <button class="nav-btn" onclick="showPage('scan')" id="nav-scan">
+    <span class="ni">📷</span>Scan QR
+  </button>
+  <button class="nav-btn" onclick="showPage('members')" id="nav-members">
+    <span class="ni">👥</span>Members
+  </button>
+  <button class="nav-btn" onclick="showPage('dashboard')" id="nav-dashboard">
+    <span class="ni">📊</span>Dashboard
+  </button>
+</nav>
+
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- PAGE: REGISTER                                            -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="page-register" class="page active">
+  <div class="card" id="reg-form-card">
+    <div class="card-title">☸️ New Member Registration</div>
+    <div class="form-group">
+      <label>Full Name *</label>
+      <input type="text" id="reg-name" placeholder="e.g. Kamal Perera" />
+    </div>
+    <div class="form-group">
+      <label>WhatsApp Number *</label>
+      <input type="tel" id="reg-wa" placeholder="e.g. 0771234567" />
+    </div>
+    <div class="form-group">
+      <label>Age *</label>
+      <input type="number" id="reg-age" placeholder="e.g. 22" min="5" max="40" />
+    </div>
+    <div class="form-group">
+      <label>Address</label>
+      <input type="text" id="reg-address" placeholder="e.g. Kandy, Central Province" />
+    </div>
+    <div class="form-group">
+      <label>Email Address</label>
+      <input type="email" id="reg-email" placeholder="e.g. kamal@email.com" />
+    </div>
+    <button class="btn btn-primary" onclick="registerMember()">✨ Register Member</button>
+  </div>
+
+  <div class="card" id="qr-result-card" style="display:none;">
+    <div class="card-title">✅ Registration Successful</div>
+    <div class="qr-box">
+      <h3 id="qr-name"></h3>
+      <p>Save or print this QR — member shows it each month</p>
+      <div id="qrcode"></div>
+      <div class="member-id-badge" id="qr-id"></div>
+    </div>
+    <button class="btn btn-secondary" onclick="resetReg()" style="margin-top:0.8rem;">➕ Register Another</button>
+    <button class="btn btn-secondary" onclick="window.print()">🖨️ Print QR</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- PAGE: SCAN QR                                             -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="page-scan" class="page">
+  <div id="scan-result" style="display:none;"></div>
+
+  <div class="card">
+    <div class="card-title">📷 Live QR Scanner</div>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.8rem;">
+      Point the camera at the member's QR code. Attendance is marked instantly.
+    </p>
+    <div id="reader"></div>
+    <button class="btn btn-scan" id="btn-start" onclick="startScanner()">▶ Start Camera</button>
+    <button class="btn btn-stop" id="btn-stop" onclick="stopScanner()" style="display:none;">⛔ Stop Camera</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⌨️ Manual Entry</div>
+    <div class="form-group">
+      <label>Member ID</label>
+      <input type="text" id="manual-id" placeholder="e.g. SUP123456" style="text-transform:uppercase;" />
+    </div>
+    <button class="btn btn-primary" onclick="manualMark()">✔️ Mark Attendance</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- PAGE: MEMBERS                                             -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="page-members" class="page">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="search" placeholder="Search name or WhatsApp…" oninput="filterMembers()" />
+  </div>
+  <div id="members-list"></div>
+</div>
+
+<div id="member-modal" class="modal-overlay" style="display:none;" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- PAGE: DASHBOARD                                           -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="page-dashboard" class="page">
+  <div class="stats-grid" id="stats-grid"><div class="spinner" style="grid-column:1/-1;"></div></div>
+  <div class="card">
+    <div class="card-title">📅 Monthly Attendance</div>
+    <div id="trend"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- CONFIG (hidden — first time setup)                        -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="config-modal" style="
+  display:none; position:fixed; inset:0;
+  background:rgba(26,18,11,0.7); z-index:200;
+  align-items:center; justify-content:center; padding:1.5rem;">
+  <div style="background:var(--cream);border-radius:var(--radius);padding:1.5rem;width:100%;max-width:440px;">
+    <h2 style="font-family:'Cinzel',serif;color:var(--bark);margin-bottom:0.5rem;font-size:1.1rem;">⚙️ One-time Setup</h2>
+    <p style="font-size:0.83rem;color:var(--muted);margin-bottom:1rem;">Paste your Google Apps Script API URL to connect to your spreadsheet.</p>
+    <div class="form-group">
+      <label>Google Apps Script URL</label>
+      <input type="url" id="api-url-input" placeholder="https://script.google.com/macros/s/…/exec" />
+    </div>
+    <button class="btn btn-primary" onclick="saveConfig()">💾 Save & Connect</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// CONFIG — API URL stored in localStorage
+// ══════════════════════════════════════════════════════════════
+let API_URL = localStorage.getItem('suprabhatha_api') || '';
+
+function checkConfig() {
+  if (!API_URL) showConfigModal();
+}
+function showConfigModal() {
+  const m = document.getElementById('config-modal');
+  m.style.display = 'flex';
+  document.getElementById('api-url-input').value = API_URL;
+}
+function saveConfig() {
+  const url = document.getElementById('api-url-input').value.trim();
+  if (!url.startsWith('https://script.google.com')) {
+    toast('Please enter a valid Apps Script URL', 'error'); return;
+  }
+  API_URL = url;
+  localStorage.setItem('suprabhatha_api', url);
+  document.getElementById('config-modal').style.display = 'none';
+  toast('Connected successfully! 🙏', 'success');
+}
+
+// ══════════════════════════════════════════════════════════════
+// API CALLS
+// ══════════════════════════════════════════════════════════════
+async function api(body) {
+  if (!API_URL) { showConfigModal(); throw new Error('API not configured'); }
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+// ══════════════════════════════════════════════════════════════
+// NAV
+// ══════════════════════════════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name !== 'scan') stopScanner();
+  if (name === 'members') loadMembers();
+  if (name === 'dashboard') loadDashboard();
+}
+
+// ══════════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════════
+let toastTimer;
+function toast(msg, type = 'info') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = '', 3500);
+}
+
+// ══════════════════════════════════════════════════════════════
+// REGISTER
+// ══════════════════════════════════════════════════════════════
+async function registerMember() {
+  const name    = document.getElementById('reg-name').value.trim();
+  const whatsapp = document.getElementById('reg-wa').value.trim();
+  const age     = document.getElementById('reg-age').value.trim();
+  const address = document.getElementById('reg-address').value.trim();
+  const email   = document.getElementById('reg-email').value.trim();
+
+  if (!name || !whatsapp || !age) { toast('Name, WhatsApp, and Age are required', 'error'); return; }
+
+  const btn = document.querySelector('#reg-form-card .btn-primary');
+  btn.disabled = true; btn.textContent = 'Registering…';
+
+  try {
+    const res = await api({ action: 'register', data: { name, whatsapp, age, address, email } });
+    if (res.success) {
+      showQR(res.member);
+      toast('Registered successfully! 🙏', 'success');
+    } else {
+      toast(res.message, 'error');
+    }
+  } catch (e) {
+    toast('Connection error. Check your API URL.', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '✨ Register Member';
+  }
+}
+
+function showQR(member) {
+  document.getElementById('reg-form-card').style.display = 'none';
+  const card = document.getElementById('qr-result-card');
+  card.style.display = 'block';
+  document.getElementById('qr-name').textContent = member.name;
+  document.getElementById('qr-id').textContent = member.id;
+  document.getElementById('qrcode').innerHTML = '';
+  new QRCode(document.getElementById('qrcode'), {
+    text: member.id, width: 200, height: 200,
+    colorDark: '#3D2B1F', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+}
+
+function resetReg() {
+  document.getElementById('reg-form-card').style.display = 'block';
+  document.getElementById('qr-result-card').style.display = 'none';
+  ['reg-name','reg-wa','reg-age','reg-address','reg-email'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// QR SCANNER — Live camera (works on GitHub Pages)
+// ══════════════════════════════════════════════════════════════
+let scanner = null;
+let scannerRunning = false;
+let scanCooldown = false;
+
+function startScanner() {
+  if (scannerRunning) return;
+  document.getElementById('btn-start').style.display = 'none';
+  document.getElementById('btn-stop').style.display = 'block';
+  document.getElementById('scan-result').style.display = 'none';
+
+  scanner = new Html5Qrcode("reader");
+  scanner.start(
+    { facingMode: "environment" },
+    { fps: 12, qrbox: { width: 240, height: 240 }, aspectRatio: 1.0 },
+    (qrData) => {
+      if (scanCooldown) return;
+      scanCooldown = true;
+      processAttendance(qrData.trim().toUpperCase());
+      setTimeout(() => { scanCooldown = false; }, 3000);
+    },
+    () => {}
+  ).then(() => {
+    scannerRunning = true;
+  }).catch(err => {
+    toast('Camera error: ' + err, 'error');
+    resetScannerUI();
+  });
+}
+
+function stopScanner() {
+  if (scanner && scannerRunning) {
+    scanner.stop().then(() => {
+      scanner.clear();
+      scanner = null;
+    }).catch(() => {});
+  }
+  resetScannerUI();
+}
+
+function resetScannerUI() {
+  scannerRunning = false;
+  document.getElementById('btn-start').style.display = 'block';
+  document.getElementById('btn-stop').style.display = 'none';
+}
+
+async function processAttendance(memberId) {
+  try {
+    const res = await api({ action: 'markAttendance', memberId });
+    showScanResult(res);
+  } catch (e) {
+    toast('Connection error', 'error');
+  }
+}
+
+function showScanResult(res) {
+  const box = document.getElementById('scan-result');
+  box.style.display = 'block';
+  let cls, icon, name, sub;
+  if (res.success) {
+    cls = 'success'; icon = '🙏';
+    name = res.member.name; sub = res.programmeMonth + ' — Marked ✓';
+  } else if (res.alreadyMarked) {
+    cls = 'warning'; icon = '⚠️';
+    name = res.member.name; sub = 'Already marked this month';
+  } else {
+    cls = 'error'; icon = '❌';
+    name = 'Not Found'; sub = res.message;
+  }
+  box.innerHTML = `<div class="scan-result ${cls}">
+    <div class="ri">${icon}</div>
+    <div class="rn">${name}</div>
+    <div class="rm">${sub}</div>
+  </div>`;
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function manualMark() {
+  const id = document.getElementById('manual-id').value.trim().toUpperCase();
+  if (!id) { toast('Please enter a Member ID', 'error'); return; }
+  document.getElementById('manual-id').value = '';
+  await processAttendance(id);
+}
+
+// ══════════════════════════════════════════════════════════════
+// MEMBERS
+// ══════════════════════════════════════════════════════════════
+let allMembers = [], allAttendance = [];
+
+async function loadMembers() {
+  document.getElementById('members-list').innerHTML = '<div class="spinner"></div>';
+  try {
+    const res = await api({ action: 'getMembers' });
+    allMembers = res.members || [];
+    allAttendance = res.attendance || [];
+    renderMembers(allMembers);
+  } catch (e) {
+    document.getElementById('members-list').innerHTML = '<p style="color:var(--red);text-align:center;padding:1rem;">Failed to load. Check connection.</p>';
+  }
+}
+
+function renderMembers(list) {
+  const el = document.getElementById('members-list');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty"><div class="ei">🪷</div><p>No members yet.</p></div>'; return;
+  }
+  el.innerHTML = list.map(m => {
+    const init = m.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    const cnt = allAttendance.filter(a => a.memberId === m.id).length;
+    return `<div class="member-item" onclick="openMember('${m.id}')">
+      <div class="avatar">${init}</div>
+      <div class="member-info">
+        <strong>${m.name}</strong>
+        <span>${m.whatsapp} · Age ${m.age}</span>
+      </div>
+      <div class="att-badge">${cnt} sessions</div>
+    </div>`;
+  }).join('');
+}
+
+function filterMembers() {
+  const q = document.getElementById('search').value.toLowerCase();
+  renderMembers(allMembers.filter(m => m.name.toLowerCase().includes(q) || m.whatsapp.includes(q)));
+}
+
+function openMember(id) {
+  const m = allMembers.find(x => x.id === id);
+  if (!m) return;
+  const hist = allAttendance.filter(a => a.memberId === id);
+  const init = m.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  const chips = hist.length
+    ? hist.map(h => `<span class="att-chip">☸️ ${h.programmeMonth}</span>`).join('')
+    : '<p style="color:var(--muted);font-size:0.82rem;">No records yet.</p>';
+
+  document.getElementById('modal-body').innerHTML = `
+    <div style="text-align:center;margin-bottom:1.2rem;">
+      <div class="avatar" style="width:56px;height:56px;font-size:1.2rem;margin:0 auto 0.6rem;">${init}</div>
+      <h2 style="font-family:'Cinzel',serif;color:var(--bark);font-size:1.05rem;">${m.name}</h2>
+      <span class="member-id-badge">${m.id}</span>
+    </div>
+    <div class="info-row"><strong>WhatsApp</strong><span>${m.whatsapp}</span></div>
+    <div class="info-row"><strong>Age</strong><span>${m.age}</span></div>
+    <div class="info-row"><strong>Address</strong><span>${m.address || '—'}</span></div>
+    <div class="info-row"><strong>Email</strong><span>${m.email || '—'}</span></div>
+    <div class="info-row"><strong>Joined</strong><span>${m.registeredOn}</span></div>
+    <div style="margin-top:1rem;">
+      <label style="display:block;margin-bottom:0.4rem;">Attendance (${hist.length} sessions)</label>
+      ${chips}
+    </div>
+    <button class="btn btn-secondary" onclick="closeModalDirect()" style="margin-top:1.2rem;">Close</button>`;
+
+  document.getElementById('member-modal').style.display = 'flex';
+}
+
+function closeModal(e) { if (e.target.id === 'member-modal') closeModalDirect(); }
+function closeModalDirect() { document.getElementById('member-modal').style.display = 'none'; }
+
+// ══════════════════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════════════════
+async function loadDashboard() {
+  document.getElementById('stats-grid').innerHTML = '<div class="spinner" style="grid-column:1/-1;"></div>';
+  try {
+    const s = await api({ action: 'getDashboard' });
+    document.getElementById('stats-grid').innerHTML = `
+      <div class="stat-card"><div class="stat-number">${s.totalMembers}</div><div class="stat-label">Total Members</div></div>
+      <div class="stat-card"><div class="stat-number">${s.presentThisMonth}</div><div class="stat-label">${s.currentMonth}</div></div>`;
+
+    const trend = s.monthlyTrend || {};
+    const months = Object.keys(trend).sort((a,b) => new Date('1 '+a)-new Date('1 '+b)).slice(-6);
+    if (!months.length) {
+      document.getElementById('trend').innerHTML = '<div class="empty"><div class="ei">📅</div><p>No data yet.</p></div>';
+      return;
+    }
+    const max = Math.max(...months.map(m => trend[m]));
+    document.getElementById('trend').innerHTML = `<div style="display:flex;gap:6px;align-items:flex-end;padding:0.3rem 0;">
+      ${months.map(m => {
+        const pct = Math.round((trend[m]/max)*100);
+        const cur = m === s.currentMonth;
+        return `<div style="flex:1;text-align:center;">
+          <div style="font-size:0.82rem;font-weight:700;color:var(--bark);margin-bottom:3px;">${trend[m]}</div>
+          <div style="height:100px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:5px;">
+            <div style="width:100%;max-width:32px;height:${pct}%;background:${cur?'var(--saffron)':'var(--bark)'};border-radius:5px 5px 0 0;"></div>
+          </div>
+          <div style="font-size:0.65rem;color:var(--muted);line-height:1.25;">${m.replace(' ','<br>')}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  } catch (e) {
+    toast('Failed to load dashboard', 'error');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// SETTINGS BUTTON (top-right)
+// ══════════════════════════════════════════════════════════════
+document.querySelector('.header').insertAdjacentHTML('beforeend',
+  `<button onclick="showConfigModal()" style="margin-left:auto;background:transparent;border:1.5px solid rgba(201,168,76,0.4);border-radius:8px;color:var(--gold);padding:0.4rem 0.7rem;cursor:pointer;font-size:0.75rem;font-weight:700;">⚙️ Setup</button>`
+);
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+checkConfig();
+</script>
+</body>
+</html>
