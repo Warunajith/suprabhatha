@@ -262,22 +262,28 @@ function resetReg() {
 var scanner = null;
 var scannerRunning = false;
 var scannedToday = {};
+var processing = false; // lock to block duplicate scans during API call
 
 function startScanner() {
   if (scannerRunning) return;
   document.getElementById('btn-start').style.display = 'none';
   document.getElementById('btn-stop').style.display = 'block';
   document.getElementById('scan-result').style.display = 'none';
+  processing = false;
   scanner = new Html5Qrcode('reader');
   scanner.start(
     { facingMode: 'environment' },
-    { fps: 12, qrbox: { width: 240, height: 240 }, aspectRatio: 1.0 },
+    { fps: 8, qrbox: { width: 240, height: 240 }, aspectRatio: 1.0 },
     function(qrData) {
       var id = qrData.trim().toUpperCase();
+      // If already confirmed today on this device, show result instantly
       if (scannedToday[id]) {
         showScanResult({ success: true, alreadyToday: true, member: scannedToday[id], programmeMonth: scannedToday[id].month });
         return;
       }
+      // Block if an API call is already in progress
+      if (processing) return;
+      processing = true;
       processAttendance(id);
     },
     function() {}
@@ -304,6 +310,7 @@ function resetScannerUI() {
 
 function processAttendance(memberId) {
   apiCall({ action: 'markAttendance', memberId: memberId }, function(res) {
+    processing = false; // release lock after API responds
     showScanResult(res);
   });
 }
