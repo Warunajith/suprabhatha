@@ -285,6 +285,83 @@ function showQR(member) {
     colorDark: '#3D2B1F', colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.H
   });
+  // Auto-upload styled PNG to Drive right after QR renders
+  setTimeout(function() { autoSaveStyledQRToDrive(member); }, 400);
+}
+
+function autoSaveStyledQRToDrive(member) {
+  var DPI = 600;
+  var inch = DPI;
+  var qrSize = Math.round(1.5 * inch);
+  var cw = 2 * inch;
+  var ch = Math.round(2.6 * inch);
+
+  // Generate high-res QR in hidden div
+  var tempDiv = document.createElement('div');
+  tempDiv.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+  document.body.appendChild(tempDiv);
+  new QRCode(tempDiv, {
+    text: member.id, width: qrSize, height: qrSize,
+    colorDark: '#3D2B1F', colorLight: '#FDF6EC',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+
+  setTimeout(function() {
+    var qrCanvas = tempDiv.querySelector('canvas');
+    var cv = document.createElement('canvas');
+    cv.width = cw; cv.height = ch;
+    var ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    ctx.fillStyle = '#FDF6EC';
+    ctx.fillRect(0, 0, cw, ch);
+
+    ctx.fillStyle = '#C9A84C';
+    ctx.font = Math.round(0.18 * inch) + 'px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('☸', cw / 2, Math.round(0.22 * inch));
+
+    ctx.fillStyle = '#3D2B1F';
+    ctx.font = 'bold ' + Math.round(0.17 * inch) + 'px serif';
+    ctx.fillText(member.name, cw / 2, Math.round(0.42 * inch));
+
+    ctx.fillStyle = '#8C7B6B';
+    ctx.font = Math.round(0.1 * inch) + 'px sans-serif';
+    ctx.fillText('Suprabhatha Dhamma Programme', cw / 2, Math.round(0.57 * inch));
+
+    ctx.strokeStyle = '#DDD0B8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(Math.round(0.3 * inch), Math.round(0.65 * inch));
+    ctx.lineTo(cw - Math.round(0.3 * inch), Math.round(0.65 * inch));
+    ctx.stroke();
+
+    var qrX = (cw - qrSize) / 2;
+    var qrY = Math.round(0.72 * inch);
+    if (qrCanvas) { ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize); }
+
+    var idY = qrY + qrSize + Math.round(0.25 * inch);
+    ctx.font = 'bold ' + Math.round(0.14 * inch) + 'px monospace';
+    var idW = ctx.measureText(member.id).width + Math.round(0.2 * inch);
+    var idH = Math.round(0.24 * inch);
+    var idX = (cw - idW) / 2;
+    ctx.fillStyle = '#3D2B1F';
+    ctx.beginPath();
+    ctx.roundRect(idX, idY - idH * 0.78, idW, idH, 14);
+    ctx.fill();
+    ctx.fillStyle = '#C9A84C';
+    ctx.fillText(member.id, cw / 2, idY);
+
+    document.body.removeChild(tempDiv);
+
+    var base64 = cv.toDataURL('image/png', 1.0).replace('data:image/png;base64,', '');
+    apiCall({ action: 'saveStyledQR', memberId: member.id, memberName: member.name, imageBase64: base64 }, function(res) {
+      if (res.success) {
+        toast('QR saved to Drive!', 'success');
+      }
+    });
+  }, 300);
 }
 
 function getQRCanvas() {
