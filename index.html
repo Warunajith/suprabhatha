@@ -323,11 +323,13 @@ function downloadQR() {
   var srcCanvas = getQRCanvas();
   if (!srcCanvas) { toast('QR not ready', 'error'); return; }
 
-  // Build a canvas with name + QR + ID
-  var pad = 24;
-  var qrSize = 200;
-  var cw = qrSize + pad * 2;
-  var ch = 320;
+  // 2x2 inch at 300 DPI = 600x600px for QR, total canvas proportional
+  var DPI = 300;
+  var inch = DPI; // 1 inch = 300px
+  var pad = Math.round(0.3 * inch);   // 0.3 inch padding
+  var qrSize = Math.round(1.5 * inch); // 1.5 inch QR
+  var cw = 2 * inch;                   // 2 inch wide
+  var ch = Math.round(2.5 * inch);     // 2.5 inch tall (room for name + QR + ID)
   var cv = document.createElement('canvas');
   cv.width = cw; cv.height = ch;
   var ctx = cv.getContext('2d');
@@ -338,23 +340,24 @@ function downloadQR() {
 
   // Name
   ctx.fillStyle = '#3D2B1F';
-  ctx.font = 'bold 18px serif';
+  ctx.font = 'bold ' + Math.round(0.16 * inch) + 'px serif';
   ctx.textAlign = 'center';
-  ctx.fillText(name, cw / 2, 36);
+  ctx.fillText(name, cw / 2, Math.round(0.28 * inch));
 
   // Subtitle
   ctx.fillStyle = '#8C7B6B';
-  ctx.font = '12px sans-serif';
-  ctx.fillText('Suprabhatha Dhamma Programme', cw / 2, 56);
+  ctx.font = Math.round(0.1 * inch) + 'px sans-serif';
+  ctx.fillText('Suprabhatha Dhamma Programme', cw / 2, Math.round(0.45 * inch));
 
-  // QR image
-  ctx.drawImage(srcCanvas, pad, 68, qrSize, qrSize);
+  // QR — centered horizontally
+  var qrX = (cw - qrSize) / 2;
+  var qrY = Math.round(0.57 * inch);
+  ctx.drawImage(srcCanvas, qrX, qrY, qrSize, qrSize);
 
-  // ID
+  // ID below QR
   ctx.fillStyle = '#3D2B1F';
-  ctx.font = 'bold 15px monospace';
-  ctx.letterSpacing = '4px';
-  ctx.fillText(id, cw / 2, 68 + qrSize + 32);
+  ctx.font = 'bold ' + Math.round(0.13 * inch) + 'px monospace';
+  ctx.fillText(id, cw / 2, qrY + qrSize + Math.round(0.22 * inch));
 
   // Download
   var link = document.createElement('a');
