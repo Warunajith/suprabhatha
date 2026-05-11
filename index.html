@@ -600,6 +600,7 @@ function openMember(id) {
     + '<div class="info-row"><strong>Address</strong><span>' + (m.address || '-') + '</span></div>'
     + '<div class="info-row"><strong>Email</strong><span>' + (m.email || '-') + '</span></div>'
     + '<div class="info-row"><strong>Joined</strong><span>' + m.registeredOn + '</span></div>'
+    + (m.qrLink ? '<div class="info-row"><strong>QR Image</strong><span><a href="' + m.qrLink + '" target="_blank" style="color:var(--saffron);font-weight:700;">&#x2197; View in Drive</a></span></div>' : '')
     + '<div style="margin-top:1rem;"><label style="display:block;margin-bottom:0.4rem;">Attendance (' + hist.length + ' sessions)</label>' + chips + '</div>'
     + '<button class="btn btn-secondary" onclick="closeModalDirect()" style="margin-top:1.2rem;">Close</button>';
   document.getElementById('member-modal').style.display = 'flex';
