@@ -393,11 +393,22 @@ function downloadQR() {
     ctx.fillText(id, cw / 2, idY);
 
     document.body.removeChild(tempDiv);
+    var dataUrl = cv.toDataURL('image/png', 1.0);
+
+    // Download to device
     var link = document.createElement('a');
     link.download = 'QR-' + id + '-' + name.split(' ').join('_') + '.png';
-    link.href = cv.toDataURL('image/png', 1.0);
+    link.href = dataUrl;
     link.click();
     toast('QR downloaded!', 'success');
+
+    // Also save styled PNG to Drive (replaces plain QR)
+    var base64 = dataUrl.replace('data:image/png;base64,', '');
+    apiCall({ action: 'saveStyledQR', memberId: id, memberName: name, imageBase64: base64 }, function(res) {
+      if (res.success) {
+        toast('QR saved to Drive!', 'success');
+      }
+    });
   }, 250);
 }
 
