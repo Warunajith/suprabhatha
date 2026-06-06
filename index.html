@@ -60,7 +60,7 @@ input:focus{border-color:var(--gold);background:white;}
 .member-info strong{display:block;font-size:0.9rem;color:var(--deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .member-info span{font-size:0.78rem;color:var(--muted);}
 .att-badge{background:var(--petal);color:var(--bark);font-size:0.75rem;font-weight:700;padding:3px 9px;border-radius:50px;border:1px solid #DDD0B8;white-space:nowrap;}
-.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.9rem;margin-bottom:1rem;}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;}
 .stat-card{background:white;border-radius:var(--radius);padding:1.1rem;text-align:center;border:1px solid #EDE0C8;box-shadow:var(--shadow);}
 .stat-number{font-family:"Cinzel",serif;font-size:1.9rem;color:var(--bark);font-weight:600;}
 .stat-label{font-size:0.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-top:3px;}
@@ -196,7 +196,26 @@ input:focus{border-color:var(--gold);background:white;}
 
 <div id="page-dashboard" class="page">
   <div class="stats-grid" id="stats-grid"><div class="spinner" style="grid-column:1/-1;"></div></div>
-  <div class="card"><div class="card-title">Monthly Attendance</div><div id="trend"></div></div>
+  <div class="card" id="absent-card" style="display:none;">
+    <div class="card-title">&#x1F514; Absent This Month</div>
+    <div id="absent-list"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#x1F4CA; Attendance This Month</div>
+    <div id="trend"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#x1F4C5; New Members Per Month</div>
+    <div id="new-members-chart"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#x1F3C6; Member Attendance Rates</div>
+    <div id="member-rates"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#x1F465; Age Groups</div>
+    <div id="age-groups"></div>
+  </div>
 </div>
 
 <script>
@@ -677,6 +696,19 @@ function openMember(id) {
   } else {
     chips = '<p style="color:var(--muted);font-size:0.82rem;">No records yet.</p>';
   }
+  // Build WhatsApp number — strip leading 0, add Sri Lanka code
+  var waNumber = '94' + m.whatsapp.replace(/^0/, '');
+
+  // WhatsApp message — include QR Drive link if available
+  var waMsg = 'නමෝ බුද්ධාය! '  + '%0A%0A'
+    + 'පින්වත් '+m.name.split(' ')[0] + ','+ '%0A'
+    +'සුප්‍රභාත හමුව වෙනුවෙන් ඔබගේ ලියාපදිංචි අංකය:  '+ m.id + '%0A'
+    + (m.qrLink ? 'QR කේතය: ' + m.qrLink + '%0A%0A' : '')
+    + 'මෙම අංකය හෝ QR කේතය ඉදිරි වැඩසටහන් වලට පැමි‍ණීමේදී ඉදිරිපත් කරන්න.' +'%0A'
+    + '%0Aතෙරුවන් සරණයි!.';
+
+  var waUrl = 'https://wa.me/' + waNumber + '?text=' + waMsg;
+
   document.getElementById('modal-body').innerHTML =
     '<div style="text-align:center;margin-bottom:1.2rem;">'
     + '<div class="avatar" style="width:56px;height:56px;font-size:1.2rem;margin:0 auto 0.6rem;">' + init + '</div>'
@@ -690,7 +722,10 @@ function openMember(id) {
     + '<div class="info-row"><strong>Joined</strong><span>' + m.registeredOn + '</span></div>'
     + (m.qrLink ? '<div class="info-row"><strong>QR Image</strong><span><a href="' + m.qrLink + '" target="_blank" style="color:var(--saffron);font-weight:700;">&#x2197; View in Drive</a></span></div>' : '')
     + '<div style="margin-top:1rem;"><label style="display:block;margin-bottom:0.4rem;">Attendance (' + hist.length + ' sessions)</label>' + chips + '</div>'
-    + '<button class="btn btn-secondary" onclick="closeModalDirect()" style="margin-top:1.2rem;">Close</button>';
+    + '<div style="display:flex;gap:8px;margin-top:1.2rem;">'
+    + '<a href="' + waUrl + '" target="_blank" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:0.75rem;background:#25D366;color:white;border-radius:10px;font-weight:700;font-size:0.9rem;text-decoration:none;">&#x1F4AC; Send QR via WhatsApp</a>'
+    + '</div>'
+    + '<button class="btn btn-secondary" onclick="closeModalDirect()" style="margin-top:0.5rem;">Close</button>';
   document.getElementById('member-modal').style.display = 'flex';
 }
 
@@ -700,32 +735,103 @@ function closeModalDirect() { document.getElementById('member-modal').style.disp
 function loadDashboard() {
   document.getElementById('stats-grid').innerHTML = '<div class="spinner" style="grid-column:1/-1;"></div>';
   apiCall({ action: 'getDashboard' }, function(s) {
+    // ── 1. STAT CARDS ──
+    var attendRate = s.totalMembers > 0 ? Math.round((s.presentThisMonth / s.totalMembers) * 100) : 0;
     document.getElementById('stats-grid').innerHTML =
       '<div class="stat-card"><div class="stat-number">' + s.totalMembers + '</div><div class="stat-label">Total Members</div></div>'
-      + '<div class="stat-card"><div class="stat-number">' + s.presentThisMonth + '</div><div class="stat-label">' + s.currentMonth + '</div></div>';
-    var trend = s.monthlyTrend || {};
-    var months = Object.keys(trend).sort(function(a, b) { return new Date('1 ' + a) - new Date('1 ' + b); }).slice(-6);
-    if (!months.length) {
-      document.getElementById('trend').innerHTML = '<div class="empty"><div class="ei">&#x1F4C5;</div><p>No data yet.</p></div>';
-      return;
+      + '<div class="stat-card"><div class="stat-number">' + s.presentThisMonth + '</div><div class="stat-label">Present · ' + attendRate + '%</div></div>'
+      + '<div class="stat-card"><div class="stat-number">' + s.neverMissed + '</div><div class="stat-label">Never Missed</div></div>'
+      + '<div class="stat-card"><div class="stat-number">' + (s.absentThisMonth ? s.absentThisMonth.length : 0) + '</div><div class="stat-label">Absent This Month</div></div>';
+
+    // ── 2. ABSENT THIS MONTH ──
+    var absentCard = document.getElementById('absent-card');
+    var absentList = s.absentThisMonth || [];
+    if (absentList.length) {
+      absentCard.style.display = 'block';
+      var aHtml = '';
+      for (var i = 0; i < absentList.length; i++) {
+        var a = absentList[i];
+        var init = a.name.split(' ').map(function(w) { return w[0]; }).join('').slice(0,2).toUpperCase();
+        aHtml += '<div class="member-item" style="cursor:default;">'
+          + '<div class="avatar">' + init + '</div>'
+          + '<div class="member-info"><strong>' + a.name + '</strong><span>' + a.whatsapp + '</span></div>'
+          + '<a href="https://wa.me/94' + a.whatsapp.replace(/^0/, '') + '" target="_blank" style="background:var(--green);color:white;border:none;padding:5px 10px;border-radius:8px;font-size:0.75rem;font-weight:700;text-decoration:none;white-space:nowrap;">WhatsApp</a>'
+          + '</div>';
+      }
+      document.getElementById('absent-list').innerHTML = aHtml;
+    } else {
+      absentCard.style.display = 'none';
     }
-    var max = 0;
-    for (var i = 0; i < months.length; i++) { if (trend[months[i]] > max) max = trend[months[i]]; }
-    var bars = '';
-    for (var i = 0; i < months.length; i++) {
-      var m = months[i];
-      var pct = Math.round((trend[m] / max) * 100);
-      var cur = m === s.currentMonth;
-      bars += '<div style="flex:1;text-align:center;">'
-        + '<div style="font-size:0.82rem;font-weight:700;color:var(--bark);margin-bottom:3px;">' + trend[m] + '</div>'
-        + '<div style="height:100px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:5px;">'
-        + '<div style="width:100%;max-width:32px;height:' + pct + '%;background:' + (cur ? 'var(--saffron)' : 'var(--bark)') + ';border-radius:5px 5px 0 0;"></div>'
-        + '</div>'
-        + '<div style="font-size:0.65rem;color:var(--muted);line-height:1.25;">' + m.replace(' ', '<br>') + '</div>'
+
+    // ── 3. MONTHLY ATTENDANCE TREND ──
+    renderBarChart('trend', s.monthlyTrend || {}, s.currentMonth, 'var(--saffron)', 'var(--bark)');
+
+    // ── 4. NEW MEMBERS PER MONTH ──
+    renderBarChart('new-members-chart', s.newMembersPerMonth || {}, s.currentMonth, 'var(--saffron)', '#5DCAA5');
+
+    // ── 5. MEMBER ATTENDANCE RATES ──
+    var rates = s.memberRates || [];
+    if (!rates.length) {
+      document.getElementById('member-rates').innerHTML = '<div class="empty"><div class="ei">&#x1F4CB;</div><p>No data yet.</p></div>';
+    } else {
+      var rHtml = '';
+      for (var i = 0; i < rates.length; i++) {
+        var r = rates[i];
+        var color = r.rate >= 75 ? '#1D9E75' : r.rate >= 50 ? '#BA7517' : '#E24B4A';
+        var badgeBg = r.rate >= 75 ? '#E8F5EE' : r.rate >= 50 ? '#FEF6EC' : '#FDF0EE';
+        var init = r.name.split(' ').map(function(w) { return w[0]; }).join('').slice(0,2).toUpperCase();
+        rHtml += '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:0.5px solid #EDE0C8;">'
+          + '<div class="avatar" style="width:32px;height:32px;font-size:0.78rem;">' + init + '</div>'
+          + '<div style="flex:1;min-width:0;"><div style="font-size:0.85rem;font-weight:600;color:var(--deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + r.name + '</div></div>'
+          + '<div style="width:80px;height:6px;background:#EDE0C8;border-radius:3px;flex-shrink:0;">'
+          + '<div style="height:100%;width:' + r.rate + '%;background:' + color + ';border-radius:3px;"></div></div>'
+          + '<div style="min-width:38px;text-align:right;font-size:0.78rem;font-weight:700;background:' + badgeBg + ';color:' + color + ';padding:2px 6px;border-radius:6px;">' + r.rate + '%</div>'
+          + '</div>';
+      }
+      document.getElementById('member-rates').innerHTML = rHtml;
+    }
+
+    // ── 6. AGE GROUPS ──
+    var ages = s.ageGroups || {};
+    var ageKeys = ['Under 18', '18 - 24', '25 - 35', 'Above 35'];
+    var ageMax = 0;
+    for (var k = 0; k < ageKeys.length; k++) { if ((ages[ageKeys[k]] || 0) > ageMax) ageMax = ages[ageKeys[k]]; }
+    var agHtml = '';
+    for (var k = 0; k < ageKeys.length; k++) {
+      var key = ageKeys[k];
+      var val = ages[key] || 0;
+      var pct = ageMax > 0 ? Math.round((val / ageMax) * 100) : 0;
+      agHtml += '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:0.5px solid #EDE0C8;">'
+        + '<div style="min-width:68px;font-size:0.82rem;color:var(--muted);font-weight:600;">' + key + '</div>'
+        + '<div style="flex:1;height:8px;background:#EDE0C8;border-radius:4px;">'
+        + '<div style="height:100%;width:' + pct + '%;background:var(--bark);border-radius:4px;"></div></div>'
+        + '<div style="min-width:28px;text-align:right;font-size:0.82rem;font-weight:700;color:var(--bark);">' + val + '</div>'
         + '</div>';
     }
-    document.getElementById('trend').innerHTML = '<div style="display:flex;gap:6px;align-items:flex-end;padding:0.3rem 0;">' + bars + '</div>';
+    document.getElementById('age-groups').innerHTML = agHtml || '<div class="empty"><p>No data.</p></div>';
   });
+}
+
+function renderBarChart(elId, data, currentKey, curColor, defColor) {
+  var months = Object.keys(data).sort(function(a, b) { return new Date('1 ' + a) - new Date('1 ' + b); }).slice(-6);
+  var el = document.getElementById(elId);
+  if (!months.length) { el.innerHTML = '<div class="empty"><div class="ei">&#x1F4C5;</div><p>No data yet.</p></div>'; return; }
+  var max = 0;
+  for (var i = 0; i < months.length; i++) { if (data[months[i]] > max) max = data[months[i]]; }
+  var bars = '';
+  for (var i = 0; i < months.length; i++) {
+    var m = months[i];
+    var pct = max > 0 ? Math.round((data[m] / max) * 100) : 0;
+    var cur = m === currentKey;
+    bars += '<div style="flex:1;text-align:center;">'
+      + '<div style="font-size:0.78rem;font-weight:700;color:var(--bark);margin-bottom:3px;">' + data[m] + '</div>'
+      + '<div style="height:90px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:5px;">'
+      + '<div style="width:100%;max-width:32px;height:' + (pct || 4) + '%;background:' + (cur ? curColor : defColor) + ';border-radius:4px 4px 0 0;"></div>'
+      + '</div>'
+      + '<div style="font-size:0.62rem;color:var(--muted);line-height:1.25;">' + m.replace(' ', '<br>') + '</div>'
+      + '</div>';
+  }
+  el.innerHTML = '<div style="display:flex;gap:6px;align-items:flex-end;padding:0.3rem 0;">' + bars + '</div>';
 }
 </script>
 </body>
